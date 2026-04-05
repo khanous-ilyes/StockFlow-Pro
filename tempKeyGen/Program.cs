@@ -1,0 +1,1 @@
+using System; using System.IO; using System.Security.Cryptography; var rsa = RSA.Create(2048); File.WriteAllText("clean_keys.txt", Convert.ToBase64String(rsa.ExportRSAPrivateKey()) + "`n" + Convert.ToBase64String(rsa.ExportRSAPublicKey()));
