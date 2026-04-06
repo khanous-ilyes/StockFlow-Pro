@@ -18,11 +18,13 @@ public class SettingsController : ControllerBase
 {
     private readonly IAppDbContext _context;
     private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env;
+    private readonly IFileStorageService _fileStorageService;
 
-    public SettingsController(IAppDbContext context, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env)
+    public SettingsController(IAppDbContext context, Microsoft.AspNetCore.Hosting.IWebHostEnvironment env, IFileStorageService fileStorageService)
     {
         _context = context;
         _env = env;
+        _fileStorageService = fileStorageService;
     }
 
     [HttpGet]
@@ -92,35 +94,19 @@ public class SettingsController : ControllerBase
         if (tenant == null)
             return NotFound(new { Message = "Enterprise non trouvée." });
 
-        string uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "logos");
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
-
-        string uniqueFileName = $"{tenant.Id}_{Guid.NewGuid()}{extension}";
-        string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-        // Delete old logo if it exists
-        if (!string.IsNullOrEmpty(tenant.LogoUrl))
+        // Delete old logo if it exists on Supabase (optional, but handled by the interface)
+        if (!string.IsNullOrEmpty(tenant.LogoUrl) && tenant.LogoUrl.Contains("supabase.co"))
         {
-            var oldFileName = Path.GetFileName(tenant.LogoUrl.TrimEnd('/'));
-            if (!string.IsNullOrEmpty(oldFileName))
-            {
-                var oldFilePath = Path.Combine(uploadsFolder, oldFileName);
-                if (System.IO.File.Exists(oldFilePath))
-                {
-                    try { System.IO.File.Delete(oldFilePath); } catch { /* Ignore */ }
-                }
-            }
+            try { await _fileStorageService.DeleteFileAsync(tenant.LogoUrl); } catch { /* Ignore */ }
         }
 
-        using (var fileStream = new FileStream(filePath, FileMode.Create))
+        using (var stream = file.OpenReadStream())
         {
-            await file.CopyToAsync(fileStream);
+            var publicUrl = await _fileStorageService.UploadFileAsync(stream, file.FileName, file.ContentType);
+            tenant.LogoUrl = publicUrl;
+            await _context.SaveChangesAsync();
         }
 
-        tenant.LogoUrl = $"/uploads/logos/{uniqueFileName}";
-        await _context.SaveChangesAsync();
-
-        return Ok(new { LogoUrl = tenant.LogoUrl, Message = "Logo mis à jour avec succès." });
+        return Ok(new { LogoUrl = tenant.LogoUrl, Message = "Logo mis à jour avec succès sur Supabase." });
     }
 }

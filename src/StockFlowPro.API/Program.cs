@@ -59,6 +59,7 @@ builder.Services.AddScoped<StockFlowPro.Application.Services.IInvoiceService, St
 // Register License Services
 builder.Services.AddSingleton<StockFlowPro.API.Services.License.IMachineIdProvider, StockFlowPro.API.Services.License.WindowsMachineIdProvider>();
 builder.Services.AddSingleton<StockFlowPro.API.Services.License.ILicenseCryptographyService, StockFlowPro.API.Services.License.LicenseCryptographyService>();
+builder.Services.AddScoped<StockFlowPro.Application.Interfaces.IFileStorageService, StockFlowPro.Infrastructure.Services.SupabaseStorageService>();
 
 if (string.IsNullOrEmpty(secretKey))
 {
