@@ -44,7 +44,8 @@ builder.Services.AddScoped<StockFlowPro.Application.Services.AuthService>(provid
         secretKey ?? "", 
         jwtSettings.GetValue<string>("Issuer") ?? "", 
         jwtSettings.GetValue<string>("Audience") ?? "", 
-        jwtSettings.GetValue<int>("ExpiryMinutes")
+        jwtSettings.GetValue<int>("ExpiryMinutes"),
+        builder.Configuration["AppMode"] == "Online"
     );
 });
 

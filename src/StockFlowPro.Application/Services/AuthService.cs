@@ -17,14 +17,16 @@ public class AuthService
     private readonly string _jwtIssuer;
     private readonly string _jwtAudience;
     private readonly int _jwtExpiryMinutes;
+    private readonly bool _isOnlineMode;
 
-    public AuthService(IAppDbContext context, string jwtSecret, string jwtIssuer, string jwtAudience, int jwtExpiryMinutes)
+    public AuthService(IAppDbContext context, string jwtSecret, string jwtIssuer, string jwtAudience, int jwtExpiryMinutes, bool isOnlineMode = false)
     {
         _context = context;
         _jwtSecret = jwtSecret;
         _jwtIssuer = jwtIssuer;
         _jwtAudience = jwtAudience;
         _jwtExpiryMinutes = jwtExpiryMinutes;
+        _isOnlineMode = isOnlineMode;
     }
 
     public async Task<(string Token, User User, Tenant Tenant)> RegisterAsync(string tenantName, string email, string password, string fullName, string? macAddress = null)
@@ -82,16 +84,19 @@ public class AuthService
                 throw new UnauthorizedAccessException("TenantAccountPending"); // Specific error code for frontend
                 
             // Hardware Binding check
-            if (!string.IsNullOrEmpty(user.Tenant.AllowedMacAddress))
+            if (!_isOnlineMode)
             {
-                if (string.IsNullOrEmpty(deviceMacAddress) || user.Tenant.AllowedMacAddress != deviceMacAddress)
-                    throw new UnauthorizedAccessException("DeviceNotAuthorized");
-            }
-            // If AllowedMacAddress is null but Tenant IS active, we should capture the first MAC as the allowed one.
-            else if (!string.IsNullOrEmpty(deviceMacAddress) && user.Tenant.AllowedMacAddress == null)
-            {
-                user.Tenant.AllowedMacAddress = deviceMacAddress;
-                await _context.SaveChangesAsync();
+                if (!string.IsNullOrEmpty(user.Tenant.AllowedMacAddress))
+                {
+                    if (string.IsNullOrEmpty(deviceMacAddress) || user.Tenant.AllowedMacAddress != deviceMacAddress)
+                        throw new UnauthorizedAccessException("DeviceNotAuthorized");
+                }
+                // If AllowedMacAddress is null but Tenant IS active, we should capture the first MAC as the allowed one.
+                else if (!string.IsNullOrEmpty(deviceMacAddress) && user.Tenant.AllowedMacAddress == null)
+                {
+                    user.Tenant.AllowedMacAddress = deviceMacAddress;
+                    await _context.SaveChangesAsync();
+                }
             }
         }
 
