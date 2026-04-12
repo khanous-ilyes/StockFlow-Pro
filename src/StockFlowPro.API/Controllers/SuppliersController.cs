@@ -76,7 +76,15 @@ public class SuppliersController : ControllerBase
 
         try
         {
-            var result = await _supplierService.AddPaymentAsync(id, req.Amount, req.Notes, req.Reference, userId);
+            var payment = await _supplierService.AddPaymentAsync(id, req.Amount, req.Notes, req.Reference, userId);
+            var result = new {
+                id = payment.Id,
+                supplierId = payment.SupplierId,
+                amount = payment.Amount,
+                date = payment.Date,
+                notes = payment.Notes,
+                reference = payment.Reference
+            };
             return Ok(result);
         }
         catch (InvalidOperationException ex)
