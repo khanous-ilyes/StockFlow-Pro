@@ -167,4 +167,87 @@ public class AnalyticsController : ControllerBase
 
         return Ok(result);
     }
+
+    [HttpGet("product-buyers/{productId}")]
+    public async Task<IActionResult> GetProductBuyers(Guid productId, [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        var ordersQuery = _context.Orders
+            .Include(o => o.Items)
+            .Include(o => o.Client)
+            .Where(o => (int)o.Status == 1 && o.Items.Any(i => i.ProductId == productId))
+            .AsQueryable();
+
+        if (startDate.HasValue)
+            ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
+        if (endDate.HasValue)
+            ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
+
+        var orders = await ordersQuery.ToListAsync();
+
+        var buyers = orders.Where(o => o.Client != null)
+            .GroupBy(o => o.Client!.Id)
+            .Select(g => new {
+                clientId = g.Key,
+                clientName = g.First().Client!.FullName,
+                totalPurchasedQuantity = g.SelectMany(o => o.Items).Where(i => i.ProductId == productId).Sum(i => i.Quantity),
+                totalSpentOnProduct = g.SelectMany(o => o.Items).Where(i => i.ProductId == productId).Sum(i => i.TotalPrice),
+                lastPurchaseDate = g.Max(o => o.CreatedAt)
+            })
+            .OrderByDescending(x => x.totalSpentOnProduct)
+            .ToList();
+
+        var totalQuantity = buyers.Sum(b => b.totalPurchasedQuantity);
+        var totalRevenue = buyers.Sum(b => b.totalSpentOnProduct);
+
+        return Ok(new {
+            productId,
+            buyers,
+            totalQuantity,
+            totalRevenue
+        });
+    }
+
+    [HttpGet("client-history/{clientId}")]
+    public async Task<IActionResult> GetClientHistory(Guid clientId)
+    {
+        var client = await _context.Clients.FindAsync(clientId);
+        if (client == null) return NotFound("Client not found");
+
+        var orders = await _context.Orders
+            .Include(o => o.Items)
+            .ThenInclude(i => i.Product)
+            .Where(o => o.ClientId == clientId && (int)o.Status == 1)
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+
+        var favoriteProducts = orders.SelectMany(o => o.Items)
+            .GroupBy(i => i.ProductId)
+            .Select(g => new {
+                productId = g.Key,
+                productName = g.First().ProductName,
+                quantityBought = g.Sum(i => i.Quantity),
+                totalSpent = g.Sum(i => i.TotalPrice)
+            })
+            .OrderByDescending(x => x.totalSpent)
+            .Take(10)
+            .ToList();
+
+        var result = new {
+            client = new { client.Id, client.FullName, client.TotalPurchases, client.CurrentBalance },
+            totalOrders = orders.Count,
+            totalSpent = orders.Sum(o => o.TotalAmount),
+            recentOrders = orders.Select(o => new {
+                o.Id,
+                o.OrderNumber,
+                o.TotalAmount,
+                o.CreatedAt,
+                o.AmountPaid,
+                o.RemainingCredit,
+                itemsCount = o.Items.Count
+            }),
+            favoriteProducts
+        };
+
+        return Ok(result);
+    }
 }

@@ -54,4 +54,5 @@ public class CreateProductDto
     public string Unit { get; set; } = "pcs";
     public bool IsActive { get; set; } = true;
     public Guid? SupplierId { get; set; }
+    public bool PaymentIsCredit { get; set; } = false;
 }

@@ -88,6 +88,17 @@ public class ProductService : IProductService
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
+        if (dto.SupplierId.HasValue && dto.PaymentIsCredit && dto.StockQuantity > 0 && dto.CostPrice > 0)
+        {
+            var supplier = await _context.Suppliers.FindAsync(dto.SupplierId.Value);
+            if (supplier != null)
+            {
+                var purchaseTotal = dto.StockQuantity * dto.CostPrice;
+                supplier.TotalDebt += purchaseTotal;
+                await _context.SaveChangesAsync();
+            }
+        }
+
         return new ProductDto
         {
             Id = product.Id,
