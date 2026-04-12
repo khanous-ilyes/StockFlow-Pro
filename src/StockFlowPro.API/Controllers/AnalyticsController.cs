@@ -124,4 +124,47 @@ public class AnalyticsController : ControllerBase
 
         return Ok(data);
     }
+
+    [HttpGet("supplier-performance")]
+    public async Task<IActionResult> GetSupplierPerformance([FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate)
+    {
+        var ordersQuery = _context.Orders
+            .Include(o => o.Items)
+            .ThenInclude(i => i.Product)
+            .Where(o => (int)o.Status == 1) // Confirmed orders
+            .AsQueryable();
+
+        if (startDate.HasValue)
+            ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
+        if (endDate.HasValue)
+            ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
+
+        var confirmedOrders = await ordersQuery.ToListAsync();
+
+        var supplierSales = confirmedOrders
+            .SelectMany(o => o.Items)
+            .Where(i => i.Product?.SupplierId != null)
+            .GroupBy(i => i.Product!.SupplierId)
+            .Select(g => new {
+                SupplierId = g.Key,
+                TotalSales = g.Sum(i => i.Quantity * i.UnitPrice),
+                QuantitySold = g.Sum(i => i.Quantity)
+            })
+            .ToList();
+
+        var suppliers = await _context.Suppliers.ToListAsync();
+
+        var result = suppliers.Select(s => {
+            var sales = supplierSales.FirstOrDefault(x => x.SupplierId == s.Id);
+            return new {
+                supplierId = s.Id,
+                supplierName = s.Name,
+                totalSales = sales?.TotalSales ?? 0,
+                quantitySold = sales?.QuantitySold ?? 0,
+                currentDebt = s.TotalDebt
+            };
+        }).OrderByDescending(x => x.totalSales).ToList();
+
+        return Ok(result);
+    }
 }

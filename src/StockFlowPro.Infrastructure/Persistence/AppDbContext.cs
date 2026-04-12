@@ -44,6 +44,8 @@ public class AppDbContext : DbContext, IAppDbContext
     public DbSet<ClientPayment> ClientPayments { get; set; }
     public DbSet<Notification> Notifications { get; set; }
     public DbSet<OfflineLicense> OfflineLicenses { get; set; }
+    public DbSet<Supplier> Suppliers { get; set; }
+    public DbSet<SupplierPayment> SupplierPayments { get; set; }
 
     // Pour l'instant, on n'a pas HttpContext injecté ici pour simplifier.
     // Il sera injecté via un Interceptor ou géré explicitement. On simule pour la conception.
@@ -66,6 +68,8 @@ public class AppDbContext : DbContext, IAppDbContext
         modelBuilder.Entity<StockMovement>().HasQueryFilter(e => e.TenantId == _currentTenantId);
         modelBuilder.Entity<ClientPayment>().HasQueryFilter(e => e.TenantId == _currentTenantId);
         modelBuilder.Entity<Notification>().HasQueryFilter(e => e.TenantId == _currentTenantId);
+        modelBuilder.Entity<Supplier>().HasQueryFilter(e => e.TenantId == _currentTenantId);
+        modelBuilder.Entity<SupplierPayment>().HasQueryFilter(e => e.TenantId == _currentTenantId);
 
         // Clés uniques et configurations de base
         modelBuilder.Entity<Tenant>().HasIndex(t => t.Slug).IsUnique();

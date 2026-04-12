@@ -56,6 +56,7 @@ builder.Services.AddScoped<StockFlowPro.Application.Services.IClientService, Sto
 builder.Services.AddScoped<StockFlowPro.Application.Services.IOrderService, StockFlowPro.Application.Services.OrderService>();
 builder.Services.AddScoped<StockFlowPro.Application.Services.ICreditsService, StockFlowPro.Application.Services.CreditsService>();
 builder.Services.AddScoped<StockFlowPro.Application.Services.IInvoiceService, StockFlowPro.Application.Services.InvoiceService>();
+builder.Services.AddScoped<StockFlowPro.Application.Services.SupplierService>();
 
 // Register License Services
 builder.Services.AddSingleton<StockFlowPro.API.Services.License.IMachineIdProvider, StockFlowPro.API.Services.License.WindowsMachineIdProvider>();

@@ -37,6 +37,7 @@ public class ProductDto
     public string? ImageUrl { get; set; }
     public string Unit { get; set; } = "pcs";
     public bool IsActive { get; set; }
+    public Guid? SupplierId { get; set; }
 }
 
 public class CreateProductDto
@@ -52,4 +53,5 @@ public class CreateProductDto
     public string? ImageUrl { get; set; }
     public string Unit { get; set; } = "pcs";
     public bool IsActive { get; set; } = true;
+    public Guid? SupplierId { get; set; }
 }

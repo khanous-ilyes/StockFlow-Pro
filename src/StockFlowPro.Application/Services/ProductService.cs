@@ -39,7 +39,8 @@ public class ProductService : IProductService
             CategoryId = p.CategoryId,
             ImageUrl = p.ImageUrl,
             Unit = p.Unit,
-            IsActive = p.IsActive
+            IsActive = p.IsActive,
+            SupplierId = p.SupplierId
         });
     }
 
@@ -61,7 +62,8 @@ public class ProductService : IProductService
             CategoryId = product.CategoryId,
             ImageUrl = product.ImageUrl,
             Unit = product.Unit,
-            IsActive = product.IsActive
+            IsActive = product.IsActive,
+            SupplierId = product.SupplierId
         };
     }
 
@@ -79,7 +81,8 @@ public class ProductService : IProductService
             CategoryId = dto.CategoryId,
             ImageUrl = dto.ImageUrl,
             Unit = dto.Unit,
-            IsActive = dto.IsActive
+            IsActive = dto.IsActive,
+            SupplierId = dto.SupplierId
         };
 
         _context.Products.Add(product);
@@ -98,7 +101,8 @@ public class ProductService : IProductService
             CategoryId = product.CategoryId,
             ImageUrl = product.ImageUrl,
             Unit = product.Unit,
-            IsActive = product.IsActive
+            IsActive = product.IsActive,
+            SupplierId = product.SupplierId
         };
     }
 
@@ -118,6 +122,7 @@ public class ProductService : IProductService
         product.ImageUrl = dto.ImageUrl;
         product.Unit = dto.Unit;
         product.IsActive = dto.IsActive;
+        product.SupplierId = dto.SupplierId;
 
         await _context.SaveChangesAsync();
     }

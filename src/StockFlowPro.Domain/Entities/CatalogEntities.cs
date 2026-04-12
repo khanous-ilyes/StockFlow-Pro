@@ -35,6 +35,9 @@ public class Product : TenantEntity
     public decimal MinStockAlert { get; set; }
     public string Unit { get; set; } = "pcs"; // kg, pcs, L
     public string? ImageUrl { get; set; }
+
+    public Guid? SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
     
     public bool IsActive { get; set; } = true;
     public DateTime? UpdatedAt { get; set; }

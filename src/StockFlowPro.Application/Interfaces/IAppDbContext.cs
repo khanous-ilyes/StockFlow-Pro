@@ -19,6 +19,8 @@ public interface IAppDbContext
     DbSet<ClientPayment> ClientPayments { get; set; }
     DbSet<Notification> Notifications { get; set; }
     DbSet<OfflineLicense> OfflineLicenses { get; set; }
+    DbSet<Supplier> Suppliers { get; set; }
+    DbSet<SupplierPayment> SupplierPayments { get; set; }
 
     Guid CurrentTenantId { get; }
     void SetCurrentTenant(Guid tenantId);
