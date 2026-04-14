@@ -32,8 +32,15 @@ public class InvoiceService : IInvoiceService
         var result = new List<InvoiceDto>();
         foreach (var inv in invoices)
         {
-            var dto = await MapToDtoAsync(inv);
-            if (dto != null) result.Add(dto);
+            try
+            {
+                var dto = await MapToDtoAsync(inv);
+                if (dto != null) result.Add(dto);
+            }
+            catch (Exception)
+            {
+                // Skip invoices that fail to map (e.g., deleted order)
+            }
         }
         return result;
     }
@@ -47,7 +54,7 @@ public class InvoiceService : IInvoiceService
 
     public async Task<InvoiceDto> CreateFromOrderAsync(CreateInvoiceDto dto)
     {
-        // Validate order exists and is confirmed
+        // Validate order exists
         var order = await _context.Orders
             .Include(o => o.Client)
             .Include(o => o.Items)
@@ -94,7 +101,7 @@ public class InvoiceService : IInvoiceService
 
         if (order == null) return null;
 
-        // Get tenant info
+        // Get tenant info — may be null for some edge cases
         var tenant = await _context.Tenants
             .FirstOrDefaultAsync(t => t.Id == _context.CurrentTenantId);
 
@@ -110,6 +117,25 @@ public class InvoiceService : IInvoiceService
             taxAmount = order.SubTotal * (taxRate / 100m);
             totalAmount = order.SubTotal + taxAmount - order.DiscountAmount;
             remainingCredit = totalAmount - order.AmountPaid;
+        }
+
+        var items = new List<InvoiceItemDto>();
+        if (order.Items != null)
+        {
+            foreach (var i in order.Items)
+            {
+                var product = await _context.Products.FindAsync(i.ProductId);
+                items.Add(new InvoiceItemDto
+                {
+                    Reference = product?.SKU ?? string.Empty,
+                    ProductName = i.ProductName,
+                    Unit = "P",
+                    Quantity = i.Quantity,
+                    UnitPrice = i.UnitPrice,
+                    Discount = i.Discount,
+                    TotalPrice = i.TotalPrice
+                });
+            }
         }
 
         return new InvoiceDto
@@ -155,20 +181,7 @@ public class InvoiceService : IInvoiceService
             SellerRc = tenant?.Rc,
             SellerArt = tenant?.Art,
 
-            Items = (await Task.WhenAll(order.Items.Select(async i =>
-            {
-                var product = await _context.Products.FindAsync(i.ProductId);
-                return new InvoiceItemDto
-                {
-                    Reference = product?.SKU ?? string.Empty,
-                    ProductName = i.ProductName,
-                    Unit = "P",
-                    Quantity = i.Quantity,
-                    UnitPrice = i.UnitPrice,
-                    Discount = i.Discount,
-                    TotalPrice = i.TotalPrice
-                };
-            }))).ToList()
+            Items = items
         };
     }
 }
