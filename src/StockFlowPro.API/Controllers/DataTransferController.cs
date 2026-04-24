@@ -32,7 +32,7 @@ public class DataTransferController : ControllerBase
         var suppliers = await _context.Suppliers.ToListAsync();
         var categories = await _context.Categories.ToListAsync();
         var products = await _context.Products.ToListAsync();
-        var invoices = await _context.Invoices.Include(i => i.Items).ToListAsync();
+        var invoices = await _context.Invoices.ToListAsync();
         var orders = await _context.Orders.Include(o => o.Items).ToListAsync();
         var clientPayments = await _context.ClientPayments.ToListAsync();
         var supplierPayments = await _context.SupplierPayments.ToListAsync();
