@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StockFlowPro.Application.Interfaces;
+using StockFlowPro.Domain.Enums;
 
 namespace StockFlowPro.API.Controllers;
 
@@ -35,7 +36,7 @@ public class AnalyticsController : ControllerBase
 
         var products = await _context.Products.ToListAsync();
 
-        var confirmedOrders = orders.Where(o => (int)o.Status == 1).ToList();
+        var confirmedOrders = orders.Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled).ToList();
 
         // CA Brut = TotalAmount of confirmed orders
         decimal grossRevenue = confirmedOrders.Sum(o => o.TotalAmount);
@@ -131,7 +132,7 @@ public class AnalyticsController : ControllerBase
         var ordersQuery = _context.Orders
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
-            .Where(o => (int)o.Status == 1) // Confirmed orders
+            .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled) // Confirmed orders
             .AsQueryable();
 
         if (startDate.HasValue)
@@ -174,7 +175,7 @@ public class AnalyticsController : ControllerBase
         var ordersQuery = _context.Orders
             .Include(o => o.Items)
             .Include(o => o.Client)
-            .Where(o => (int)o.Status == 1 && o.Items.Any(i => i.ProductId == productId))
+            .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == productId))
             .AsQueryable();
 
         if (startDate.HasValue)
@@ -216,7 +217,7 @@ public class AnalyticsController : ControllerBase
         var orders = await _context.Orders
             .Include(o => o.Items)
             .ThenInclude(i => i.Product)
-            .Where(o => o.ClientId == clientId && (int)o.Status == 1)
+            .Where(o => o.ClientId == clientId && o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled)
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();
 
@@ -258,7 +259,7 @@ public class AnalyticsController : ControllerBase
 
         // Get confirmed order items within date range
         var ordersQuery = _context.Orders.Include(o => o.Items)
-            .Where(o => (int)o.Status == 1)
+            .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled)
             .AsQueryable();
         if (startDate.HasValue) ordersQuery = ordersQuery.Where(o => o.CreatedAt >= startDate.Value);
         if (endDate.HasValue) ordersQuery = ordersQuery.Where(o => o.CreatedAt <= endDate.Value);
@@ -332,7 +333,7 @@ public class AnalyticsController : ControllerBase
         var orderItems = await _context.Orders
             .Include(o => o.Items)
             .Include(o => o.Client)
-            .Where(o => (int)o.Status == 1 && o.Items.Any(i => i.ProductId == productId))
+            .Where(o => o.Status != OrderStatus.Draft && o.Status != OrderStatus.Cancelled && o.Items.Any(i => i.ProductId == productId))
             .OrderBy(o => o.CreatedAt)
             .ToListAsync();
 
